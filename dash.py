@@ -28,19 +28,39 @@ engine = sqlalchemy.create_engine(DATABASE_URL)
 
 
 # ==============================================================================
-# 2. FUNÇÕES DE CARREGAMENTO (Métricas Globais e Listagens)
+# 2. FUNÇÕES PARA CARREGAR DADOS (Métricas Globais e Listagens)
 # ==============================================================================
+
+
+@st.cache_data
+def carregar_metricas_globais():
+    # Busca o total de cadastros de cada entidade essencial
+    qtd_alunos = pd.read_sql("SELECT COUNT(*) as total FROM alunos", engine).iloc[
+        0
+    ]["total"]
+    qtd_turmas = pd.read_sql("SELECT COUNT(*) as total FROM turmas", engine).iloc[
+        0
+    ]["total"]
+    qtd_cursos = pd.read_sql("SELECT COUNT(*) as total FROM cursos", engine).iloc[
+        0
+    ]["total"]
+    qtd_aulas = pd.read_sql("SELECT COUNT(*) as total FROM aulas", engine).iloc[
+        0
+    ]["total"]
+    return qtd_alunos, qtd_turmas, qtd_cursos, qtd_aulas
+
+
 @st.cache_data
 def carregar_detalhe_alunos():
-    # Corrigido: n.nivel, p.pcd, s.sindrome
+    # Colunas corrigidas de acordo com o mapeamento real do banco
     query = """
     SELECT 
         a.id AS `ID`,
         a.nome AS `Nome do Aluno`,
         a.genero AS `Gênero`,
-        n.nivel AS `Nível Escolar`,
-        p.pcd AS `Condição PCD`,
-        s.sindrome AS `Síndrome`
+        n.descricao AS `Nível Escolar`,
+        p.descricao AS `Condição PCD`,
+        s.nome AS `Síndrome`
     FROM alunos a
     LEFT JOIN niveis n ON a.nivel_id = n.id
     LEFT JOIN pcd p ON a.pcd_id = p.id
@@ -52,7 +72,6 @@ def carregar_detalhe_alunos():
 
 @st.cache_data
 def carregar_detalhe_turmas():
-    # Mantido t.nome e i.nome pois estão corretos na estrutura
     query = """
     SELECT 
         t.id AS `ID Turma`,
@@ -70,16 +89,15 @@ def carregar_detalhe_turmas():
 
 @st.cache_data
 def carregar_detalhe_cursos():
-    # Corrigido: c.curso
     query = """
     SELECT 
         c.id AS `ID Curso`,
-        c.curso AS `Nome do Curso`,
+        c.nome AS `Nome do Curso`,
         COUNT(ca.aula_id) AS `Total de Aulas Vinculadas`
     FROM cursos c
     LEFT JOIN curso_aula ca ON c.id = ca.curso_id
-    GROUP BY c.id, c.curso
-    ORDER BY c.curso ASC
+    GROUP BY c.id, c.nome
+    ORDER BY c.nome ASC
     """
     return pd.read_sql(query, engine)
 
@@ -87,6 +105,7 @@ def carregar_detalhe_cursos():
 # ==============================================================================
 # 3. INTERFACE INTERATIVA DO STREAMLIT
 # ==============================================================================
+
 st.set_page_config(
     page_title="Gestão Instituto Carisma", layout="wide", page_icon="📊"
 )
@@ -110,7 +129,7 @@ try:
     st.subheader("🗂️ Consulta Avançada de Entidades")
     menu_abas = st.tabs(["Alunos", "Turmas", "Cursos & Grade Curricular"])
 
-    # --- ABA: ALUNOS ---
+    # --- ABA 1: ALUNOS ---
     with menu_abas[0]:
         st.markdown("### Lista Geral de Alunos e Mapeamento de Inclusão")
         df_alunos = carregar_detalhe_alunos()
@@ -127,13 +146,13 @@ try:
         st.dataframe(df_alunos, use_container_width=True, hide_index=True)
         st.caption(f"Exibindo {len(df_alunos)} alunos cadastrados.")
 
-    # --- ABA: TURMAS ---
+    # --- ABA 2: TURMAS ---
     with menu_abas[1]:
         st.markdown("### Distribuição de Turmas e Professores")
         df_turmas = carregar_detalhe_turmas()
         st.dataframe(df_turmas, use_container_width=True, hide_index=True)
 
-    # --- ABA: CURSOS ---
+    # --- ABA 3: CURSOS ---
     with menu_abas[2]:
         st.markdown("### Cursos Disponíveis e Matriz Curricular")
         df_cursos = carregar_detalhe_cursos()
