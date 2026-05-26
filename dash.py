@@ -102,15 +102,15 @@ def carregar_detalhe_cursos():
 
 @st.cache_data
 def carregar_presenca_por_curso():
-    # Corrigido: Usando %% para escapar o caractere de porcentagem no Pandas/SQLAlchemy
+    # Evitamos o símbolo de % aqui para não quebrar o interpretador do Python
     query = """
     SELECT 
         c.nome AS `Curso`,
-        ROUND(AVG(p.presente) * 100, 1) AS `Taxa de Presenca (%%)`
+        ROUND(AVG(p.presente) * 100, 1) AS `taxa`
     FROM presencas p
     JOIN cursos c ON p.curso_id = c.id
     GROUP BY c.id, c.nome
-    ORDER BY `Taxa de Presenca (%%)` DESC
+    ORDER BY `taxa` DESC
     """
     return pd.read_sql(query, engine)
 
@@ -146,17 +146,20 @@ try:
     df_presenca = carregar_presenca_por_curso()
 
     if not df_presenca.empty:
-        # Ajustado para ler o nome da coluna correto modificado
+        # Usamos o nome limpo 'taxa' para mapear os eixos do gráfico
         fig_presenca = px.bar(
             df_presenca,
-            x="Taxa de Presenca (%%)",
+            x="taxa",
             y="Curso",
             orientation="h",
-            text="Taxa de Presenca (%%)",
-            color="Taxa de Presenca (%%)",
+            text="taxa",
+            color="taxa",
             color_continuous_scale="Viridis",
             range_x=[0, 105],
-            title="Média de Presença dos Alunos (%%) por Curso",
+            labels={
+                "taxa": "Taxa de Presença (%)"
+            },  # Aqui redefinimos o rótulo visual com o símbolo correto
+            title="Média de Presença dos Alunos por Curso",
         )
 
         fig_presenca.update_traces(texttemplate="%{text}%", textposition="outside")
