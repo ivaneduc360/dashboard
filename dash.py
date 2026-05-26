@@ -6,7 +6,7 @@ import streamlit as st
 # 1. Conexão com o Banco de Dados
 # (Substitua com suas credenciais locais ou de produção)
 engine = sqlalchemy.create_engine(
-    "mysql+pymysql://u798098636_aulas:@#Fab001122@#@S193.203.175.217:3306/u798098636_aulas"
+    "mysql+pymysql://u798098636_aulas:@#Fab001122@#@193.203.175.217:3306/u798098636_aulas"
 )
 
 
