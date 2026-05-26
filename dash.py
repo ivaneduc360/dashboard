@@ -134,7 +134,7 @@ try:
     col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 2, 1])
     with col_logo_2:
         # Puxa o arquivo salvo diretamente na raiz do seu Git
-        st.image("logo.png", use_container_width=True)
+        st.image("educEnsina-logo-dark.png", use_container_width=True)
 except Exception:
     # Caso o arquivo não seja encontrado, ele ignora silenciosamente para não quebrar o painel
     pass
