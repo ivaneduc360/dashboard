@@ -34,7 +34,6 @@ engine = sqlalchemy.create_engine(DATABASE_URL)
 
 @st.cache_data
 def carregar_metricas_globais():
-    # Busca o total de cadastros de cada entidade essencial
     qtd_alunos = pd.read_sql("SELECT COUNT(*) as total FROM alunos", engine).iloc[
         0
     ]["total"]
@@ -52,7 +51,6 @@ def carregar_metricas_globais():
 
 @st.cache_data
 def carregar_detalhe_alunos():
-    # Colunas corrigidas de acordo com o mapeamento real do banco
     query = """
     SELECT 
         a.id AS `ID`,
@@ -102,6 +100,21 @@ def carregar_detalhe_cursos():
     return pd.read_sql(query, engine)
 
 
+@st.cache_data
+def carregar_presenca_por_curso():
+    # Consulta que calcula a taxa média de presença convertendo para porcentagem
+    query = """
+    SELECT 
+        c.nome AS `Curso`,
+        ROUND(AVG(p.presente) * 100, 1) AS `Taxa de Presença (%)`
+    FROM presencas p
+    JOIN cursos c ON p.curso_id = c.id
+    GROUP BY c.id, c.nome
+    ORDER BY `Taxa de Presença (%)` DESC
+    """
+    return pd.read_sql(query, engine)
+
+
 # ==============================================================================
 # 3. INTERFACE INTERATIVA DO STREAMLIT
 # ==============================================================================
@@ -125,6 +138,39 @@ try:
 
     st.divider()
 
+    # ==============================================================================
+    # NOVA SEÇÃO: GRÁFICO DE PRESENÇAS POR CURSO
+    # ==============================================================================
+    st.subheader("📈 Análise de Engajamento por Curso")
+
+    df_presenca = carregar_presenca_por_curso()
+
+    if not df_presenca.empty:
+        # Criação do gráfico de barras horizontais para melhor leitura dos nomes dos cursos
+        fig_presenca = px.bar(
+            df_presenca,
+            x="Taxa de Presença (%)",
+            y="Curso",
+            orientation="h",
+            text="Taxa de Presença (%)",
+            color="Taxa de Presença (%)",
+            color_continuous_scale="Viridis",
+            range_x=[0, 105],  # Dá um espaço para o texto da label não cortar
+            title="Média de Presença dos Alunos (%) por Curso",
+        )
+
+        # Melhora o layout do gráfico
+        fig_presenca.update_traces(texttemplate="%{text}%", textposition="outside")
+        fig_presenca.update_layout(
+            yaxis={"categoryorder": "total ascending"}, coloraxis_showscale=False
+        )
+
+        st.plotly_chart(fig_presenca, use_container_width=True)
+    else:
+        st.info("Nenhum dado de chamada/presença foi encontrado no banco.")
+
+    st.divider()
+
     # 2. Criação das Abas para Visualização das Tabelas Detalhadas
     st.subheader("🗂️ Consulta Avançada de Entidades")
     menu_abas = st.tabs(["Alunos", "Turmas", "Cursos & Grade Curricular"])
@@ -134,7 +180,6 @@ try:
         st.markdown("### Lista Geral de Alunos e Mapeamento de Inclusão")
         df_alunos = carregar_detalhe_alunos()
 
-        # Filtro de busca textual rápido por aluno
         busca_aluno = st.text_input("🔍 Buscar aluno por nome:", "")
         if busca_aluno:
             df_alunos = df_alunos[
