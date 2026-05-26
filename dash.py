@@ -122,17 +122,22 @@ def carregar_presenca_por_turma():
 # ==============================================================================
 
 st.set_page_config(
-    page_title="Gestão Instituto Carisma", layout="wide", page_icon="📊"
+    page_title="Gestão Instituto Educ360", layout="wide", page_icon="📊"
 )
 
 # --- INCLUSÃO DO LOGOTIPO NO TOPO ---
 # Cria três colunas para deixar a imagem centralizada no meio da tela
 col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 2, 1])
-with col_logo_2:
-    st.image(
-        "https://devse-educ360.com/ensina/images/educEnsina-logo-dark.png",
-        use_container_width=True,
-    )
+
+# --- INCLUSÃO DO LOGOTIPO LOCAL NO TOPO ---
+try:
+    col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 2, 1])
+    with col_logo_2:
+        # Puxa o arquivo salvo diretamente na raiz do seu Git
+        st.image("logo.png", use_container_width=True)
+except Exception:
+    # Caso o arquivo não seja encontrado, ele ignora silenciosamente para não quebrar o painel
+    pass
 
 st.title("📊 Painel de Controle Operacional")
 st.markdown("Visão geral de cadastros, gerenciamento de turmas e componentes.")
