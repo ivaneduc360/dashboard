@@ -31,33 +31,16 @@ engine = sqlalchemy.create_engine(DATABASE_URL)
 # 2. FUNÇÕES DE CARREGAMENTO (Métricas Globais e Listagens)
 # ==============================================================================
 @st.cache_data
-def carregar_metricas_globais():
-    # Busca o total de cadastros de cada entidade essencial
-    qtd_alunos = pd.read_sql("SELECT COUNT(*) as total FROM alunos", engine).iloc[
-        0
-    ]["total"]
-    qtd_turmas = pd.read_sql("SELECT COUNT(*) as total FROM turmas", engine).iloc[
-        0
-    ]["total"]
-    qtd_cursos = pd.read_sql("SELECT COUNT(*) as total FROM cursos", engine).iloc[
-        0
-    ]["total"]
-    qtd_aulas = pd.read_sql("SELECT COUNT(*) as total FROM aulas", engine).iloc[
-        0
-    ]["total"]
-    return qtd_alunos, qtd_turmas, qtd_cursos, qtd_aulas
-
-
-@st.cache_data
 def carregar_detalhe_alunos():
+    # Corrigido: n.nivel, p.pcd, s.sindrome
     query = """
     SELECT 
         a.id AS `ID`,
         a.nome AS `Nome do Aluno`,
         a.genero AS `Gênero`,
-        n.nome AS `Nível Escolar`,
-        p.nome AS `Condição PCD`,
-        s.nome AS `Síndrome`
+        n.nivel AS `Nível Escolar`,
+        p.pcd AS `Condição PCD`,
+        s.sindrome AS `Síndrome`
     FROM alunos a
     LEFT JOIN niveis n ON a.nivel_id = n.id
     LEFT JOIN pcd p ON a.pcd_id = p.id
@@ -69,6 +52,7 @@ def carregar_detalhe_alunos():
 
 @st.cache_data
 def carregar_detalhe_turmas():
+    # Mantido t.nome e i.nome pois estão corretos na estrutura
     query = """
     SELECT 
         t.id AS `ID Turma`,
@@ -78,7 +62,7 @@ def carregar_detalhe_turmas():
     FROM turmas t
     LEFT JOIN instrutores i ON t.instrutor_id = i.id
     LEFT JOIN turma_aluno ta ON t.id = ta.turma_id
-    GROUP BY t.id
+    GROUP BY t.id, t.nome, i.nome
     ORDER BY t.nome ASC
     """
     return pd.read_sql(query, engine)
@@ -86,15 +70,16 @@ def carregar_detalhe_turmas():
 
 @st.cache_data
 def carregar_detalhe_cursos():
+    # Corrigido: c.curso
     query = """
     SELECT 
         c.id AS `ID Curso`,
-        c.nome AS `Nome do Curso`,
+        c.curso AS `Nome do Curso`,
         COUNT(ca.aula_id) AS `Total de Aulas Vinculadas`
     FROM cursos c
     LEFT JOIN curso_aula ca ON c.id = ca.curso_id
-    GROUP BY c.id
-    ORDER BY c.nome ASC
+    GROUP BY c.id, c.curso
+    ORDER BY c.curso ASC
     """
     return pd.read_sql(query, engine)
 
