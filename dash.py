@@ -2,6 +2,7 @@ import pandas as pd
 import plotly.express as px
 import sqlalchemy
 import streamlit as st
+import urllib.parse
 
 # 1. Conexão com o Banco de Dados
 # (Substitua com suas credenciais locais ou de produção)
