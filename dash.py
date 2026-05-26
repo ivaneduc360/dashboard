@@ -102,7 +102,6 @@ def carregar_detalhe_cursos():
 
 @st.cache_data
 def carregar_presenca_por_turma():
-    # Coleta a taxa de presença agrupada por data e turma para criar a linha do tempo
     query = """
     SELECT 
         t.nome AS `Turma`,
@@ -126,6 +125,15 @@ st.set_page_config(
     page_title="Gestão Instituto Carisma", layout="wide", page_icon="📊"
 )
 
+# --- INCLUSÃO DO LOGOTIPO NO TOPO ---
+# Cria três colunas para deixar a imagem centralizada no meio da tela
+col_logo_1, col_logo_2, col_logo_3 = st.columns([1, 2, 1])
+with col_logo_2:
+    st.image(
+        "https://devse-educ360.com/ensina/images/educEnsina-logo-dark.png",
+        use_container_width=True,
+    )
+
 st.title("📊 Painel de Controle Operacional")
 st.markdown("Visão geral de cadastros, gerenciamento de turmas e componentes.")
 
@@ -146,35 +154,28 @@ try:
     # ==============================================================================
     st.subheader("📈 Linha do Tempo de Engajamento por Turma")
 
-    # Carrega a base histórica de frequências
     df_presenca = carregar_presenca_por_turma()
 
     if not df_presenca.empty:
-        # Extrai a lista exclusiva de turmas do banco para popular o seletor
         lista_turmas = ["Todas as Turmas"] + sorted(
             df_presenca["Turma"].unique().tolist()
         )
 
-        # Componente Visual de Filtro (Dropdown)
         turma_selecionada = st.selectbox(
             "🔍 Escolha uma Turma para analisar o histórico de presença:",
             lista_turmas,
         )
 
-        # Filtra o DataFrame dinamicamente com base na escolha do usuário
         if turma_selecionada != "Todas as Turmas":
             df_filtrado = df_presenca[df_presenca["Turma"] == turma_selecionada]
         else:
             df_filtrado = df_presenca
 
-        # Construção do gráfico de linha temporal interactivo
         fig_linha = px.line(
             df_filtrado,
             x="Data da Aula",
             y="taxa",
-            color="Turma"
-            if turma_selecionada == "Todas as Turmas"
-            else None,  # Divide as linhas se mostrar todas
+            color="Turma" if turma_selecionada == "Todas as Turmas" else None,
             markers=True,
             text="taxa",
             range_y=[0, 110],
@@ -182,7 +183,6 @@ try:
             title=f"Evolução da Frequência Escolar - {turma_selecionada}",
         )
 
-        # Configura as labels flutuantes para exibir o símbolo de percentual
         fig_linha.update_traces(textposition="top center", texttemplate="%{text}%")
         fig_linha.update_layout(xaxis_tickformat="%d/%m/%Y")
 
