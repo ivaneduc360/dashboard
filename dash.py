@@ -11,7 +11,7 @@ import streamlit as st
 # Dados de acesso fornecidos
 usuario = "u798098636_aulas"
 senha_original = "@#Fab001122@#"
-servidor = "193.203.175.217"
+servidor = "193.203.175.2217"
 porta = "3306"
 banco = "u798098636_aulas"
 
