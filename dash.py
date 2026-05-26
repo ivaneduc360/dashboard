@@ -101,18 +101,21 @@ def carregar_detalhe_cursos():
 
 
 @st.cache_data
-def carregar_presenca_por_curso():
-    # Evitamos o símbolo de % aqui para não quebrar o interpretador do Python
+def carregar_presenca_por_turma():
+    # Coleta a taxa de presença agrupada por data e turma para criar a linha do tempo
     query = """
     SELECT 
-        c.nome AS `Curso`,
+        t.nome AS `Turma`,
+        p.data_aula AS `Data da Aula`,
         ROUND(AVG(p.presente) * 100, 1) AS `taxa`
     FROM presencas p
-    JOIN cursos c ON p.curso_id = c.id
-    GROUP BY c.id, c.nome
-    ORDER BY `taxa` DESC
+    JOIN turmas t ON p.turma_id = t.id
+    GROUP BY t.id, t.nome, p.data_aula
+    ORDER BY p.data_aula ASC, t.nome ASC
     """
-    return pd.read_sql(query, engine)
+    df = pd.read_sql(query, engine)
+    df["Data da Aula"] = pd.to_datetime(df["Data da Aula"])
+    return df
 
 
 # ==============================================================================
@@ -139,35 +142,51 @@ try:
     st.divider()
 
     # ==============================================================================
-    # SEÇÃO DO GRÁFICO DE PRESENÇAS POR CURSO
+    # SEÇÃO DO GRÁFICO DE PRESENÇAS FILTRADO POR TURMA
     # ==============================================================================
-    st.subheader("📈 Análise de Engajamento por Curso")
+    st.subheader("📈 Linha do Tempo de Engajamento por Turma")
 
-    df_presenca = carregar_presenca_por_curso()
+    # Carrega a base histórica de frequências
+    df_presenca = carregar_presenca_por_turma()
 
     if not df_presenca.empty:
-        # Usamos o nome limpo 'taxa' para mapear os eixos do gráfico
-        fig_presenca = px.bar(
-            df_presenca,
-            x="taxa",
-            y="Curso",
-            orientation="h",
+        # Extrai a lista exclusiva de turmas do banco para popular o seletor
+        lista_turmas = ["Todas as Turmas"] + sorted(
+            df_presenca["Turma"].unique().tolist()
+        )
+
+        # Componente Visual de Filtro (Dropdown)
+        turma_selecionada = st.selectbox(
+            "🔍 Escolha uma Turma para analisar o histórico de presença:",
+            lista_turmas,
+        )
+
+        # Filtra o DataFrame dinamicamente com base na escolha do usuário
+        if turma_selecionada != "Todas as Turmas":
+            df_filtrado = df_presenca[df_presenca["Turma"] == turma_selecionada]
+        else:
+            df_filtrado = df_presenca
+
+        # Construção do gráfico de linha temporal interactivo
+        fig_linha = px.line(
+            df_filtrado,
+            x="Data da Aula",
+            y="taxa",
+            color="Turma"
+            if turma_selecionada == "Todas as Turmas"
+            else None,  # Divide as linhas se mostrar todas
+            markers=True,
             text="taxa",
-            color="taxa",
-            color_continuous_scale="Viridis",
-            range_x=[0, 105],
-            labels={
-                "taxa": "Taxa de Presença (%)"
-            },  # Aqui redefinimos o rótulo visual com o símbolo correto
-            title="Média de Presença dos Alunos por Curso",
+            range_y=[0, 110],
+            labels={"taxa": "Taxa de Presença (%)", "Data da Aula": "Data do Encontro"},
+            title=f"Evolução da Frequência Escolar - {turma_selecionada}",
         )
 
-        fig_presenca.update_traces(texttemplate="%{text}%", textposition="outside")
-        fig_presenca.update_layout(
-            yaxis={"categoryorder": "total ascending"}, coloraxis_showscale=False
-        )
+        # Configura as labels flutuantes para exibir o símbolo de percentual
+        fig_linha.update_traces(textposition="top center", texttemplate="%{text}%")
+        fig_linha.update_layout(xaxis_tickformat="%d/%m/%Y")
 
-        st.plotly_chart(fig_presenca, use_container_width=True)
+        st.plotly_chart(fig_linha, use_container_width=True)
     else:
         st.info("Nenhum dado de chamada/presença foi encontrado no banco.")
 
