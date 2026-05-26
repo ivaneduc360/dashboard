@@ -156,5 +156,4 @@ try:
 
 except Exception as e:
     st.error(f"Erro ao processar as consultas no banco de dados: {e}")
-    except Exception as e:
-        st.error(f"Erro ao carregar dados de frequência: {e}")
+
