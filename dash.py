@@ -102,15 +102,15 @@ def carregar_detalhe_cursos():
 
 @st.cache_data
 def carregar_presenca_por_curso():
-    # Consulta que calcula a taxa média de presença convertendo para porcentagem
+    # Corrigido: Usando %% para escapar o caractere de porcentagem no Pandas/SQLAlchemy
     query = """
     SELECT 
         c.nome AS `Curso`,
-        ROUND(AVG(p.presente) * 100, 1) AS `Taxa de Presença (%)`
+        ROUND(AVG(p.presente) * 100, 1) AS `Taxa de Presenca (%%)`
     FROM presencas p
     JOIN cursos c ON p.curso_id = c.id
     GROUP BY c.id, c.nome
-    ORDER BY `Taxa de Presença (%)` DESC
+    ORDER BY `Taxa de Presenca (%%)` DESC
     """
     return pd.read_sql(query, engine)
 
@@ -139,27 +139,26 @@ try:
     st.divider()
 
     # ==============================================================================
-    # NOVA SEÇÃO: GRÁFICO DE PRESENÇAS POR CURSO
+    # SEÇÃO DO GRÁFICO DE PRESENÇAS POR CURSO
     # ==============================================================================
     st.subheader("📈 Análise de Engajamento por Curso")
 
     df_presenca = carregar_presenca_por_curso()
 
     if not df_presenca.empty:
-        # Criação do gráfico de barras horizontais para melhor leitura dos nomes dos cursos
+        # Ajustado para ler o nome da coluna correto modificado
         fig_presenca = px.bar(
             df_presenca,
-            x="Taxa de Presença (%)",
+            x="Taxa de Presenca (%%)",
             y="Curso",
             orientation="h",
-            text="Taxa de Presença (%)",
-            color="Taxa de Presença (%)",
+            text="Taxa de Presenca (%%)",
+            color="Taxa de Presenca (%%)",
             color_continuous_scale="Viridis",
-            range_x=[0, 105],  # Dá um espaço para o texto da label não cortar
-            title="Média de Presença dos Alunos (%) por Curso",
+            range_x=[0, 105],
+            title="Média de Presença dos Alunos (%%) por Curso",
         )
 
-        # Melhora o layout do gráfico
         fig_presenca.update_traces(texttemplate="%{text}%", textposition="outside")
         fig_presenca.update_layout(
             yaxis={"categoryorder": "total ascending"}, coloraxis_showscale=False
